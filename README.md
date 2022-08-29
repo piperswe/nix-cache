@@ -8,4 +8,5 @@
     - `route` should be the subdomain this Worker will run on followed by `/*`
     - `bucket_name` and `preview_bucket_name` should be the name of the R2 bucket you'll use
  3. Run `npm run login` to login to Wrangler
- 3. Run `npm run deploy`!
+ 4. Run `npm run deploy`!
+ 5. Upload an `index.html` to your bucket if you want a landing page
