@@ -13,6 +13,19 @@ function hasBody(object: R2Object | R2ObjectBody): object is R2ObjectBody {
 
 const resolvedKeyHeader = "x-resolved-r2-key";
 
+type Range = | { offset: number; length?: number }
+| { offset?: number; length: number };
+
+function rangeToHeader(range: Range | undefined, file: R2Object | R2ObjectBody): string {
+  if (range) {
+    const offset = range.offset ?? 0
+    const length = range.length ?? 0
+    return `bytes ${offset}-${offset + length - 1}/${file.size}`;
+  } else {
+    return ""
+  }
+}
+
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const allowedMethods = ["GET", "HEAD", "OPTIONS"];
@@ -29,7 +42,7 @@ export default {
 
     const cache = caches.default;
     let response = await cache.match(request);
-    let range: R2Range | undefined;
+    let range: Range | undefined;
 
     if (!response || !response.ok) {
       console.warn("Cache miss");
@@ -129,7 +142,7 @@ export default {
           },
         });
       }
-
+      
       response = new Response(hasBody(file) ? file.body : null, {
         status: (file?.size || 0) === 0 ? 204 : (range ? 206 : 200),
         headers: {
@@ -144,7 +157,7 @@ export default {
           "content-type": file.httpMetadata?.contentType ?? "application/octet-stream",
           "content-language": file.httpMetadata?.contentLanguage ?? "",
           "content-disposition": file.httpMetadata?.contentDisposition ?? "",
-          "content-range": range ? `bytes ${range.offset}-${range.offset + range.length - 1}/${file.size}` : "",
+          "content-range": rangeToHeader(range, file),
 
           [resolvedKeyHeader]: path,
         }
